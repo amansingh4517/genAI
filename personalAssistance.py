@@ -10,7 +10,7 @@ import json
 
 load_dotenv()
 client = OpenAI(
-    GOOGLE_API_KEY,
+    api_key =  os.getenv('GOOGLE_API_KEY'),
     base_url="https://generativelanguage.googleapis.com/v1beta/openai/"
 )
 
@@ -36,7 +36,7 @@ Wait for the observation and based on the observation from the tool call resolve
 
 RULES:
 - follow stictly output JSON format
-- always perform one step at a time and wait for the next input
+- ***always perform one step at a time and wait for the next input***
 - carefully analyse the user query
 - avoid performing such os task that can harm the system
 
@@ -78,6 +78,8 @@ while(True):
     messages.append({"role": "user","content": user_query})
 
     while(True):
+        done = False  #for breaking this loop
+
         response = client.chat.completions.create(
             model="gemini-3-flash-preview",
             response_format={"type": "json_object"},
@@ -90,22 +92,29 @@ while(True):
               {parsed_output}""")
         messages.append({"role":"assistant" , "content" : json.dumps(parsed_output)}) 
 
-        if parsed_output.get("step") == "plan":
-            print(f"🧠 : {parsed_output.get('content')}")
-            continue
 
-        if parsed_output.get("step") == "action":
-            tool_name = parsed_output.get("function")
-            tool_input = parsed_output.get("input")
+        steps = parsed_output if isinstance(parsed_output, list) else [parsed_output]
 
-            if Available_tools.get(tool_name, False) != False:
-                output = Available_tools[tool_name].get("fn")(tool_input)
-                messages.append({"role" : "assistant" , "content" : json.dumps({"step":"observe" , "output" : output})})
+        for step in steps:
+            messages.append({"role": "assistant", "content": json.dumps(step)})
+
+            if step.get("step") == "plan":
+                print(f"🧠 : {step.get('content')}")
                 continue
 
-        if parsed_output.get("step") == "output":
-            print(f"🤖 : {parsed_output.get('content')}")
-            break
+            if step.get("step") == "action":
+                tool_name = step.get("function")
+                tool_input = step.get("input")
+
+                if Available_tools.get(tool_name, False) != False:
+                    output = Available_tools[tool_name].get("fn")(tool_input)
+                    messages.append({"role": "assistant", "content": json.dumps({"step": "observe", "output": output})})
+                    continue
+
+            if step.get("step") == "output":
+                print(f"🤖 : {step.get('content')}")
+                done = True
+                break
+        if(done): break
        
-    
 
