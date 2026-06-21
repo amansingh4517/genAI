@@ -2,13 +2,15 @@ from langchain_unstructured import UnstructuredLoader
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 from langchain_google_genai import GoogleGenerativeAIEmbeddings
 from langchain_qdrant import QdrantVectorStore
-
+from openai import OpenAI
+from dotenv import load_dotenv
 import getpass
 import os
 
+load_dotenv()
 
-if not os.getenv("GOOGLE_API_KEY"):
-    os.environ["GOOGLE_API_KEY"] = getpass.getpass("Enter your Google API key: ")
+if not os.getenv('GOOGLE_API_KEY'):
+    os.environ['GOOGLE_API_KEY'] = getpass.getpass("Enter your Google API key: ")
 
 # -------------------------------------------------------PHASE 1-----------------------------------------------------------------
 
@@ -89,3 +91,22 @@ context : {relevent_content}
 
 
 """
+
+messages = [{"role":"system","content": system_prompt} , {"role" : "user" , "content": query}]
+
+while(True):
+        
+    client = OpenAI(
+    api_key=os.getenv('GOOGLE_API_KEY'),
+    base_url="https://generativelanguage.googleapis.com/v1beta/openai/"
+    )
+
+    response = client.chat.completions.create(
+    model="gemini-3.5-flash",
+    messages=messages
+    )
+
+    parse_output = response.choices[0].message
+
+
+

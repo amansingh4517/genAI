@@ -1,8 +1,5 @@
 from dotenv import load_dotenv
-# import requests
 from google import genai
-#from langfuse.decorators import observe
-# from langfuse.openai import openai
 from openai import OpenAI
 
 import os
@@ -75,6 +72,7 @@ messages = [
 
 while(True):
     user_query = input(">>>> ")
+    if(user_query == "exit") : break
     messages.append({"role": "user","content": user_query})
 
     while(True):
@@ -88,8 +86,8 @@ while(True):
 
         #json.loads() converts json to python object
         parsed_output = json.loads(response.choices[0].message.content) #i have to convert output into the python object because i have to put in Message list
-        print(f"""DEBUG : 
-              {parsed_output}""")
+        # print(f"""DEBUG : 
+        #       {parsed_output}""")
         messages.append({"role":"assistant" , "content" : json.dumps(parsed_output)}) 
 
 
@@ -99,7 +97,7 @@ while(True):
             messages.append({"role": "assistant", "content": json.dumps(step)})
 
             if step.get("step") == "plan":
-                print(f"🧠 : {step.get('content')}")
+                print(f"🧠 : {step.get('content')}\n")
                 continue
 
             if step.get("step") == "action":
@@ -112,7 +110,7 @@ while(True):
                     continue
 
             if step.get("step") == "output":
-                print(f"🤖 : {step.get('content')}")
+                print(f"🤖 : {step.get('content')}\n")
                 done = True
                 break
         if(done): break
